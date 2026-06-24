@@ -430,40 +430,6 @@ export default function PublicVerificationPortal({
     }
   };
 
-  // Parse target report or contractor before any conditional return.
-  // React hooks must run in the same order on every render; keeping this useEffect
-  // above the loading return prevents the blank-screen crash after QR/profile links open.
-  const targetReport = verifyId ? reports.find(r => r.id === verifyId) : null;
-  const foundContractor = contractorId ? contractors.find(c => c.id === contractorId) : 
-                          targetReport ? contractors.find(c => c.id === targetReport.contractorId) : null;
-
-  const targetContractor = foundContractor || (contractorId === 'con-2' || (targetReport && targetReport.contractorId === 'con-2') ? {
-    id: 'con-2',
-    name: 'Metro Fire Protection',
-    licenseNumber: 'F-44120-C',
-    email: 'nj-inspect@metrofirenj.com',
-    phone: '(732) 555-4120',
-    activeReportsCount: 0
-  } : contractorId === 'con-3' || (targetReport && targetReport.contractorId === 'con-3') ? {
-    id: 'con-3',
-    name: 'Titan Fire Systems Inc.',
-    licenseNumber: 'F-88291-C',
-    email: 'filings@titanfiresystems.com',
-    phone: '(609) 555-8291',
-    activeReportsCount: 0
-  } : null);
-
-  useEffect(() => {
-    if (contractors && contractors.length > 0) {
-      const defaultId = contractorId || targetContractor?.id || contractors[0].id;
-      if (contractors.some(c => c.id === defaultId)) {
-        setSelectedContractorId(defaultId);
-      } else {
-        setSelectedContractorId(contractors[0].id);
-      }
-    }
-  }, [contractors, contractorId, targetContractor]);
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col font-sans select-none items-center justify-center p-6 text-center">
@@ -506,6 +472,39 @@ export default function PublicVerificationPortal({
       </div>
     );
   }
+
+  // Parse target report or contractor
+  const targetReport = verifyId ? reports.find(r => r.id === verifyId) : null;
+  const foundContractor = contractorId ? contractors.find(c => c.id === contractorId) : 
+                          targetReport ? contractors.find(c => c.id === targetReport.contractorId) : null;
+
+  // Robust targetContractor insurance fallback for system default contractor IDs (con-2, con-3)
+  const targetContractor = foundContractor || (contractorId === 'con-2' || (targetReport && targetReport.contractorId === 'con-2') ? {
+    id: 'con-2',
+    name: 'Metro Fire Protection',
+    licenseNumber: 'F-44120-C',
+    email: 'nj-inspect@metrofirenj.com',
+    phone: '(732) 555-4120',
+    activeReportsCount: 0
+  } : contractorId === 'con-3' || (targetReport && targetReport.contractorId === 'con-3') ? {
+    id: 'con-3',
+    name: 'Titan Fire Systems Inc.',
+    licenseNumber: 'F-88291-C',
+    email: 'filings@titanfiresystems.com',
+    phone: '(609) 555-8291',
+    activeReportsCount: 0
+  } : null);
+
+  useEffect(() => {
+    if (contractors && contractors.length > 0) {
+      const defaultId = contractorId || targetContractor?.id || contractors[0].id;
+      if (contractors.some(c => c.id === defaultId)) {
+        setSelectedContractorId(defaultId);
+      } else {
+        setSelectedContractorId(contractors[0].id);
+      }
+    }
+  }, [contractors, contractorId, targetContractor]);
 
   const targetProperty = targetReport ? properties.find(p => p.id === targetReport.propertyId) : null;
 
@@ -655,7 +654,7 @@ export default function PublicVerificationPortal({
                 if (onNavigate) {
                   onNavigate(null, targetReport.contractorId);
                 } else {
-                  window.history.pushState(null, '', `/contractor/${targetReport.contractorId}`);
+                  window.history.pushState(null, '', `?contractor=${targetReport.contractorId}`);
                   window.dispatchEvent(new PopStateEvent('popstate'));
                 }
                 window.scrollTo({ top: 0, behavior: 'smooth' });

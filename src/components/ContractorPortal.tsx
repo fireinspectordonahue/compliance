@@ -4048,13 +4048,13 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
               {/* QR Image container block */}
               <div className="p-3 bg-white border-2 border-[#dc2626] rounded shadow-md flex flex-col items-center justify-center space-y-2">
                 <QRCodeSVG 
-                  value={`${getPublicDomainUrl(qrMode, customDomain) || "https://fire-inspect.local"}/contractor/${user.contractorId || 'con-1'}`}
+                  value={`${getPublicDomainUrl(qrMode, customDomain) || "https://fire-inspect.local"}/?contractor=${user.contractorId || 'con-1'}`}
                   size={160}
                   fgColor="#0f172a"
                   className="w-[160px] h-[160px]"
                 />
                 <a 
-                  href={`${getPublicDomainUrl(qrMode, customDomain)}/contractor/${user.contractorId || 'con-1'}`}
+                  href={`${getPublicDomainUrl(qrMode, customDomain)}/?contractor=${user.contractorId || 'con-1'}`}
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-[9px] text-[#dc2626] font-bold hover:underline flex items-center gap-1 font-sans"
