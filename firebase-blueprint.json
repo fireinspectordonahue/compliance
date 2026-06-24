@@ -1,0 +1,30 @@
+{
+  "entities": {
+    "AppState": {
+      "title": "AppState",
+      "description": "Schema for synchronization of the full system database state",
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "description": "JSON string of the complete database"
+        },
+        "updatedAt": {
+          "type": "integer",
+          "description": "Timestamp of the last update"
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Identifier of the container instance that performed the update"
+        }
+      },
+      "required": ["data", "updatedAt", "senderId"]
+    }
+  },
+  "firestore": {
+    "/app_state/{docId}": {
+      "schema": "AppState",
+      "description": "Document holding the unified application database state for sync"
+    }
+  }
+}

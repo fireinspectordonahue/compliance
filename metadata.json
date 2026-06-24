@@ -1,0 +1,6 @@
+{
+  "name": "Fire Inspection Portal",
+  "description": "A portal for fire equipment contractors to upload inspection reports and for the bureau to audit equipment, statuses, and history across mapped properties.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
