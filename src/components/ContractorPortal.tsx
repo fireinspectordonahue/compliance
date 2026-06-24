@@ -1516,7 +1516,7 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
                   phone: '(609) 555-0100'
                 };
                 const appDomainUrl = getPublicDomainUrl(qrMode, customDomain);
-                const contractorPageUrl = `${appDomainUrl}/?contractor=${currentCon.id}`;
+                const contractorPageUrl = `${appDomainUrl}/contractor/${currentCon.id}`;
 
                 return (
                   <div className="p-5 border-b border-slate-100 space-y-4">
@@ -1606,7 +1606,7 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
                           </span>
                           <div className="flex gap-1.5 items-center justify-between">
                             <code className="text-[9px] text-slate-300 font-mono font-bold break-all whitespace-pre-wrap leading-tight select-all">
-                              {getPublicDomainUrl(qrMode, customDomain) + '/?contractor=' + currentCon.id}
+                              {getPublicDomainUrl(qrMode, customDomain) + '/contractor/' + currentCon.id}
                             </code>
                           </div>
                         </div>
@@ -4048,13 +4048,13 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
               {/* QR Image container block */}
               <div className="p-3 bg-white border-2 border-[#dc2626] rounded shadow-md flex flex-col items-center justify-center space-y-2">
                 <QRCodeSVG 
-                  value={`${getPublicDomainUrl(qrMode, customDomain) || "https://fire-inspect.local"}/?contractor=${user.contractorId || 'con-1'}`}
+                  value={`${getPublicDomainUrl(qrMode, customDomain) || "https://fire-inspect.local"}/contractor/${user.contractorId || 'con-1'}`}
                   size={160}
                   fgColor="#0f172a"
                   className="w-[160px] h-[160px]"
                 />
                 <a 
-                  href={`${getPublicDomainUrl(qrMode, customDomain)}/?contractor=${user.contractorId || 'con-1'}`}
+                  href={`${getPublicDomainUrl(qrMode, customDomain)}/contractor/${user.contractorId || 'con-1'}`}
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-[9px] text-[#dc2626] font-bold hover:underline flex items-center gap-1 font-sans"

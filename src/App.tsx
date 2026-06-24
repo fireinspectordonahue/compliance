@@ -35,18 +35,33 @@ export default function App() {
   // Sync state if URL changes
   useEffect(() => {
     const handleUrlChange = () => {
-      const currentParams = new URL(window.location.href).searchParams;
-      const vId = currentParams.get('verify');
-      const cId = currentParams.get('contractor');
-      // If found in query parameters, update and keep view open. We do not automatically set to false 
-      // when empty, to prevent iframe sandbox page-sync resets from flashing/resetting the UI.
+      const currentUrl = new URL(window.location.href);
+      const currentParams = currentUrl.searchParams;
+
+      // Support both legacy query links and clean public links:
+      //   /?verify=REPORT-ID
+      //   /?contractor=CONTRACTOR-ID
+      //   /verify/REPORT-ID
+      //   /contractor/CONTRACTOR-ID
+      const pathParts = currentUrl.pathname.split('/').filter(Boolean);
+      const pathVerifyId = pathParts[0] === 'verify' ? decodeURIComponent(pathParts[1] || '') : '';
+      const pathContractorId = pathParts[0] === 'contractor' ? decodeURIComponent(pathParts[1] || '') : '';
+
+      const vId = currentParams.get('verify') || pathVerifyId;
+      const cId = currentParams.get('contractor') || pathContractorId;
+
+      // A public QR/profile link should never require the user to choose a portal or sign in.
       if (vId) {
         setVerifyId(vId);
+        setContractorParamId(null);
         setShowPublicRoute(true);
+        return;
       }
       if (cId) {
         setContractorParamId(cId);
+        setVerifyId(null);
         setShowPublicRoute(true);
+        return;
       }
     };
     
