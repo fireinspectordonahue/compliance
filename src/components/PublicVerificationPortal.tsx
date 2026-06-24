@@ -654,7 +654,7 @@ export default function PublicVerificationPortal({
                 if (onNavigate) {
                   onNavigate(null, targetReport.contractorId);
                 } else {
-                  window.history.pushState(null, '', `?contractor=${targetReport.contractorId}`);
+                  window.history.pushState(null, '', `/contractor/${targetReport.contractorId}`);
                   window.dispatchEvent(new PopStateEvent('popstate'));
                 }
                 window.scrollTo({ top: 0, behavior: 'smooth' });

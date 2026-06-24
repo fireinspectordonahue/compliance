@@ -980,17 +980,11 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
       let contractorId = '';
 
       if (decodedText.includes('verify=')) {
-        verifyId = decodeURIComponent(decodedText.split('verify=')[1]?.split('&')[0]?.split('#')[0] || '');
+        verifyId = decodedText.split('verify=')[1]?.split('&')[0] || '';
       } else if (decodedText.includes('contractor=')) {
-        contractorId = decodeURIComponent(decodedText.split('contractor=')[1]?.split('&')[0]?.split('#')[0] || '');
+        contractorId = decodedText.split('contractor=')[1]?.split('&')[0] || '';
       } else {
-        const verifyPathMatch = decodedText.match(/\/verify\/([^/?#&]+)/);
-        const contractorPathMatch = decodedText.match(/\/contractor\/([^/?#&]+)/);
-        if (verifyPathMatch && verifyPathMatch[1]) {
-          verifyId = decodeURIComponent(verifyPathMatch[1]);
-        } else if (contractorPathMatch && contractorPathMatch[1]) {
-          contractorId = decodeURIComponent(contractorPathMatch[1]);
-        } else if (decodedText.startsWith('rep-') || decodedText.startsWith('report-')) {
+        if (decodedText.startsWith('rep-') || decodedText.startsWith('report-')) {
           verifyId = decodedText;
         } else if (decodedText.startsWith('con-') || decodedText.startsWith('contractor-')) {
           contractorId = decodedText;

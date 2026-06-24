@@ -42,7 +42,7 @@ export default function App() {
       const pathVerifyId = pathParts[0] === 'verify' ? pathParts[1] : null;
       const vId = currentParams.get('verify') || pathVerifyId;
       const cId = currentParams.get('contractor') || pathContractorId;
-      // If found in query parameters, update and keep view open. We do not automatically set to false 
+      // If found in query parameters or direct public paths, update and keep view open. We do not automatically set to false 
       // when empty, to prevent iframe sandbox page-sync resets from flashing/resetting the UI.
       if (vId) {
         setVerifyId(vId);
