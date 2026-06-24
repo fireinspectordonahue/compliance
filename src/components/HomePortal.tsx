@@ -50,6 +50,20 @@ export default function HomePortal({
         cId = decodeURIComponent(contractorMatch[1]);
       }
 
+      // Also support direct public routes like /verify/rep-1 and /contractor/con-1
+      if (!vId) {
+        const verifyPathMatch = decodedText.match(/\/verify\/([^/?#&]+)/);
+        if (verifyPathMatch && verifyPathMatch[1]) {
+          vId = decodeURIComponent(verifyPathMatch[1]);
+        }
+      }
+      if (!cId) {
+        const contractorPathMatch = decodedText.match(/\/contractor\/([^/?#&]+)/);
+        if (contractorPathMatch && contractorPathMatch[1]) {
+          cId = decodeURIComponent(contractorPathMatch[1]);
+        }
+      }
+
       // Fallback for raw IDs
       if (!vId && !cId) {
         if (decodedText.startsWith('rep-') || decodedText.startsWith('report-')) {
@@ -72,7 +86,7 @@ export default function HomePortal({
         if (onNavigateToPublicVerification) {
           onNavigateToPublicVerification(null, cId);
         } else {
-          window.history.pushState(null, '', `?contractor=${cId}`);
+          window.history.pushState(null, '', `/contractor/${cId}`);
           window.dispatchEvent(new PopStateEvent('popstate'));
         }
       } else {

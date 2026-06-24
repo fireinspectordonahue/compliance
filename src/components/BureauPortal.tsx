@@ -980,11 +980,17 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
       let contractorId = '';
 
       if (decodedText.includes('verify=')) {
-        verifyId = decodedText.split('verify=')[1]?.split('&')[0] || '';
+        verifyId = decodeURIComponent(decodedText.split('verify=')[1]?.split('&')[0]?.split('#')[0] || '');
       } else if (decodedText.includes('contractor=')) {
-        contractorId = decodedText.split('contractor=')[1]?.split('&')[0] || '';
+        contractorId = decodeURIComponent(decodedText.split('contractor=')[1]?.split('&')[0]?.split('#')[0] || '');
       } else {
-        if (decodedText.startsWith('rep-') || decodedText.startsWith('report-')) {
+        const verifyPathMatch = decodedText.match(/\/verify\/([^/?#&]+)/);
+        const contractorPathMatch = decodedText.match(/\/contractor\/([^/?#&]+)/);
+        if (verifyPathMatch && verifyPathMatch[1]) {
+          verifyId = decodeURIComponent(verifyPathMatch[1]);
+        } else if (contractorPathMatch && contractorPathMatch[1]) {
+          contractorId = decodeURIComponent(contractorPathMatch[1]);
+        } else if (decodedText.startsWith('rep-') || decodedText.startsWith('report-')) {
           verifyId = decodedText;
         } else if (decodedText.startsWith('con-') || decodedText.startsWith('contractor-')) {
           contractorId = decodedText;
@@ -2138,7 +2144,7 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
 
                     <div className="space-y-1.5">
                       <a 
-                        href={`${getPublicDomainUrl(qrMode, customDomain)}/?contractor=${con.id}`}
+                        href={`${getPublicDomainUrl(qrMode, customDomain)}/contractor/${con.id}`}
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="group/link inline-block max-w-full"
@@ -2193,14 +2199,14 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
                       <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-[#dc2626]/40 group-hover/qr:border-[#dc2626] rounded-br-md transition-colors duration-200"></div>
                       
                       <QRCodeSVG 
-                        value={`${getPublicDomainUrl(qrMode, customDomain) || "https://fire-inspect.local"}/?contractor=${con.id}`}
+                        value={`${getPublicDomainUrl(qrMode, customDomain) || "https://fire-inspect.local"}/contractor/${con.id}`}
                         size={110}
                         fgColor="#0f172a"
                         className="rounded opacity-95 group-hover/qr:opacity-100 transition-all duration-200 group-hover/qr:scale-[1.02]"
                       />
                       
                       <a 
-                        href={`${getPublicDomainUrl(qrMode, customDomain)}/?contractor=${con.id}`}
+                        href={`${getPublicDomainUrl(qrMode, customDomain)}/contractor/${con.id}`}
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#dc2626]/5 hover:bg-[#dc2626]/10 text-[#dc2626] font-bold transition-all duration-200 text-[9.5px] font-sans border border-[#dc2626]/10 shadow-sm shrink-0"
@@ -3207,7 +3213,7 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
                 />
                 
                 <QRCodeSVG 
-                  value={`${getPublicDomainUrl(qrMode, customDomain) || "https://fire-inspect.local"}/?contractor=${scanningContractor.id}`}
+                  value={`${getPublicDomainUrl(qrMode, customDomain) || "https://fire-inspect.local"}/contractor/${scanningContractor.id}`}
                   size={100}
                   fgColor="#ffffff"
                   bgColor="#070b10"
@@ -3993,7 +3999,7 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
 
               <div className="flex flex-col sm:flex-row gap-2 font-sans pt-1">
                 <a
-                  href={`${getPublicDomainUrl(qrMode, customDomain) || "https://fire-inspect.local"}/?contractor=${scannedContractorResult.id}`}
+                  href={`${getPublicDomainUrl(qrMode, customDomain) || "https://fire-inspect.local"}/contractor/${scannedContractorResult.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 py-2 bg-[#dc2626] hover:bg-black text-white text-xs font-black uppercase rounded flex items-center justify-center gap-1.5 transition cursor-pointer shadow-sm text-center leading-none"
