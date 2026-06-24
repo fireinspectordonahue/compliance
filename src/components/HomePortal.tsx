@@ -50,21 +50,16 @@ export default function HomePortal({
         cId = decodeURIComponent(contractorMatch[1]);
       }
 
-      // Extract direct public paths like /contractor/con-3 or /verify/rep-123
-      if (!vId || !cId) {
-        try {
-          const scanUrl = decodedText.startsWith('http://') || decodedText.startsWith('https://')
-            ? new URL(decodedText)
-            : new URL(decodedText, window.location.origin);
-          const parts = scanUrl.pathname.split('/').filter(Boolean);
-          if (!vId && parts[0] === 'verify' && parts[1]) vId = decodeURIComponent(parts[1]);
-          if (!cId && parts[0] === 'contractor' && parts[1]) cId = decodeURIComponent(parts[1]);
-        } catch (e) {
-          const verifyPathMatch = decodedText.match(/\/verify\/([^/?#&]+)/);
-          const contractorPathMatch = decodedText.match(/\/contractor\/([^/?#&]+)/);
-          if (!vId && verifyPathMatch?.[1]) vId = decodeURIComponent(verifyPathMatch[1]);
-          if (!cId && contractorPathMatch?.[1]) cId = decodeURIComponent(contractorPathMatch[1]);
-        }
+      // Also support clean public URLs like /contractor/con-3 or /verify/rep-123.
+      try {
+        const parsed = new URL(decodedText);
+        const parts = parsed.pathname.split('/').filter(Boolean);
+        if (!vId && parts[0] === 'verify' && parts[1]) vId = decodeURIComponent(parts[1]);
+        if (!cId && parts[0] === 'contractor' && parts[1]) cId = decodeURIComponent(parts[1]);
+      } catch (_) {
+        const pathMatch = decodedText.match(/\/(contractor|verify)\/([^/?#]+)/);
+        if (pathMatch && pathMatch[1] === 'verify' && !vId) vId = decodeURIComponent(pathMatch[2]);
+        if (pathMatch && pathMatch[1] === 'contractor' && !cId) cId = decodeURIComponent(pathMatch[2]);
       }
 
       // Fallback for raw IDs
