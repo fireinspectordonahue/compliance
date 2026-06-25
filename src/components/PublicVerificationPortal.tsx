@@ -943,7 +943,12 @@ export default function PublicVerificationPortal({
   const renderContractorPublicDashboard = () => {
     if (!targetContractor) return null;
 
-    const contractorPageReports = reports.filter(r => r.contractorId === targetContractor.id);
+    const contractorPageReports = reports.filter((r: any) => {
+      const idMatch = r.contractorId === targetContractor.id;
+      const nameMatch = targetContractor.name && r.contractorName && r.contractorName.toLowerCase().trim() === targetContractor.name.toLowerCase().trim();
+      const licenseMatch = targetContractor.licenseNumber && r.contractorLicenseNumber && r.contractorLicenseNumber.toLowerCase().trim() === targetContractor.licenseNumber.toLowerCase().trim();
+      return idMatch || nameMatch || licenseMatch;
+    });
 
     return (
       <div className="space-y-6">
@@ -986,6 +991,15 @@ export default function PublicVerificationPortal({
             Compliant Seals Installed ({contractorPageReports.length})
           </h3>
 
+          {contractorPageReports.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-xl p-8 text-center shadow-sm">
+              <ShieldCheck className="w-10 h-10 text-emerald-600 mx-auto mb-3" />
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Contractor Public Profile Loaded</h3>
+              <p className="text-xs text-slate-500 mt-2 max-w-lg mx-auto leading-relaxed">
+                This QR code is assigned to {targetContractor.name}. No inspection report records are currently attached to this public contractor profile in the live database.
+              </p>
+            </div>
+          ) : (
           <div className="space-y-4">
             {contractorPageReports.map(rep => {
               const sc = getStatusConfig(rep.status);
@@ -1152,6 +1166,7 @@ export default function PublicVerificationPortal({
               );
             })}
           </div>
+          )}
         </div>
 
       </div>
@@ -1385,6 +1400,8 @@ export default function PublicVerificationPortal({
               </div>
             </div>
           </div>
+        ) : contractorId ? (
+          renderContractorPublicDashboard()
         ) : verifyId ? (
           renderVerificationContent()
         ) : (
