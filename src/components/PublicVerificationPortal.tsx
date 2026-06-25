@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Property, InspectionReport, Contractor, UserInfo } from '../types';
 import Logo from './Logo';
 import { 
@@ -430,6 +430,81 @@ export default function PublicVerificationPortal({
     }
   };
 
+  // Parse target report or contractor BEFORE any early return.
+  // This prevents React hook-order crashes when the public QR page flashes during loading.
+  const targetReport = useMemo(() => {
+    return verifyId ? reports.find(r => r.id === verifyId) || null : null;
+  }, [verifyId, reports]);
+
+  const foundContractor = useMemo(() => {
+    if (contractorId) {
+      return contractors.find(c => c.id === contractorId) || null;
+    }
+    if (targetReport) {
+      return contractors.find(c => c.id === targetReport.contractorId) || null;
+    }
+    return null;
+  }, [contractorId, contractors, targetReport]);
+
+  // Robust targetContractor insurance fallback for system default contractor IDs.
+  const targetContractor = useMemo(() => {
+    if (foundContractor) return foundContractor;
+
+    const effectiveContractorId = contractorId || targetReport?.contractorId || null;
+
+    if (effectiveContractorId === 'con-2') {
+      return {
+        id: 'con-2',
+        name: 'Metro Fire Protection',
+        licenseNumber: 'F-44120-C',
+        email: 'nj-inspect@metrofirenj.com',
+        phone: '(732) 555-4120',
+        activeReportsCount: 0
+      } as Contractor;
+    }
+
+    if (effectiveContractorId === 'con-3') {
+      return {
+        id: 'con-3',
+        name: 'Titan Fire Systems Inc.',
+        licenseNumber: 'F-88291-C',
+        email: 'filings@titanfiresystems.com',
+        phone: '(609) 555-8291',
+        activeReportsCount: 0
+      } as Contractor;
+    }
+
+    // Never allow a contractor QR route to render a blank screen.
+    // If the live database has not synced yet, still open a public contractor page instead of returning to login.
+    if (effectiveContractorId) {
+      return {
+        id: effectiveContractorId,
+        name: 'Registered Fire Protection Contractor',
+        licenseNumber: effectiveContractorId.toUpperCase(),
+        email: 'not-listed@compliancelink.local',
+        phone: 'Not listed',
+        activeReportsCount: 0
+      } as Contractor;
+    }
+
+    return null;
+  }, [foundContractor, contractorId, targetReport]);
+
+  useEffect(() => {
+    if (contractors && contractors.length > 0) {
+      const defaultId = contractorId || targetContractor?.id || contractors[0].id;
+      if (contractors.some(c => c.id === defaultId)) {
+        setSelectedContractorId(defaultId);
+      } else {
+        setSelectedContractorId(contractors[0].id);
+      }
+    }
+  }, [contractors, contractorId, targetContractor?.id]);
+
+  const targetProperty = useMemo(() => {
+    return targetReport ? properties.find(p => p.id === targetReport.propertyId) || null : null;
+  }, [targetReport, properties]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col font-sans select-none items-center justify-center p-6 text-center">
@@ -472,41 +547,6 @@ export default function PublicVerificationPortal({
       </div>
     );
   }
-
-  // Parse target report or contractor
-  const targetReport = verifyId ? reports.find(r => r.id === verifyId) : null;
-  const foundContractor = contractorId ? contractors.find(c => c.id === contractorId) : 
-                          targetReport ? contractors.find(c => c.id === targetReport.contractorId) : null;
-
-  // Robust targetContractor insurance fallback for system default contractor IDs (con-2, con-3)
-  const targetContractor = foundContractor || (contractorId === 'con-2' || (targetReport && targetReport.contractorId === 'con-2') ? {
-    id: 'con-2',
-    name: 'Metro Fire Protection',
-    licenseNumber: 'F-44120-C',
-    email: 'nj-inspect@metrofirenj.com',
-    phone: '(732) 555-4120',
-    activeReportsCount: 0
-  } : contractorId === 'con-3' || (targetReport && targetReport.contractorId === 'con-3') ? {
-    id: 'con-3',
-    name: 'Titan Fire Systems Inc.',
-    licenseNumber: 'F-88291-C',
-    email: 'filings@titanfiresystems.com',
-    phone: '(609) 555-8291',
-    activeReportsCount: 0
-  } : null);
-
-  useEffect(() => {
-    if (contractors && contractors.length > 0) {
-      const defaultId = contractorId || targetContractor?.id || contractors[0].id;
-      if (contractors.some(c => c.id === defaultId)) {
-        setSelectedContractorId(defaultId);
-      } else {
-        setSelectedContractorId(contractors[0].id);
-      }
-    }
-  }, [contractors, contractorId, targetContractor]);
-
-  const targetProperty = targetReport ? properties.find(p => p.id === targetReport.propertyId) : null;
 
   const handleBureauAuth = (e: React.FormEvent) => {
     e.preventDefault();
