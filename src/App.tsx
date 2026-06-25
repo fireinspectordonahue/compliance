@@ -83,12 +83,12 @@ export default function App() {
     setContractorParamId(null);
     setShowPublicRoute(false);
     try {
-      window.history.pushState(null, '', window.location.pathname);
+      window.history.pushState(null, '', '/');
     } catch (e) {
       console.warn(e);
     }
-    // Clear query parameters gracefully by forcing a clean routing reload
-    window.location.href = window.location.origin + window.location.pathname;
+    // Always return to the portal-selection home screen, not the QR deep-link path.
+    window.location.href = window.location.origin + '/';
   };
 
   // Function to serialize state back to the backend JSON store

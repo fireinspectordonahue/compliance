@@ -44,10 +44,18 @@ export default function HomePortal({
         vId = decodeURIComponent(verifyMatch[1]);
       }
 
-      // Extract ?contractor= or &contractor=
+      // Extract ?contractor=, &contractor=, or direct /contractor/{id} paths
       const contractorMatch = decodedText.match(/[?&]contractor=([^&?#]+)/);
       if (contractorMatch && contractorMatch[1]) {
         cId = decodeURIComponent(contractorMatch[1]);
+      }
+      const contractorPathMatch = decodedText.match(/\/contractor\/([^/?#&]+)/);
+      if (!cId && contractorPathMatch && contractorPathMatch[1]) {
+        cId = decodeURIComponent(contractorPathMatch[1]);
+      }
+      const verifyPathMatch = decodedText.match(/\/verify\/([^/?#&]+)/);
+      if (!vId && verifyPathMatch && verifyPathMatch[1]) {
+        vId = decodeURIComponent(verifyPathMatch[1]);
       }
 
       // Fallback for raw IDs
@@ -72,7 +80,7 @@ export default function HomePortal({
         if (onNavigateToPublicVerification) {
           onNavigateToPublicVerification(null, cId);
         } else {
-          window.history.pushState(null, '', `?contractor=${cId}`);
+          window.history.pushState(null, '', `/contractor/${encodeURIComponent(cId)}`);
           window.dispatchEvent(new PopStateEvent('popstate'));
         }
       } else {

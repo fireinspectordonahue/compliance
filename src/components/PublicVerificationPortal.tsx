@@ -436,42 +436,55 @@ export default function PublicVerificationPortal({
                           targetReport ? contractors.find(c => c.id === targetReport.contractorId) : null;
 
   const urlParams = typeof window !== 'undefined' ? new URL(window.location.href).searchParams : new URLSearchParams();
-  const hasContractorPayload = !!(urlParams.get('name') || urlParams.get('license') || urlParams.get('email') || urlParams.get('phone'));
+  const firstParam = (...keys: string[]) => {
+    for (const key of keys) {
+      const value = urlParams.get(key);
+      if (value && value.trim()) return value.trim();
+    }
+    return '';
+  };
+
+  const payloadName = firstParam('name', 'company', 'companyName', 'contractorName');
+  const payloadLicense = firstParam('license', 'licenseNumber', 'contractorLicense', 'licenseNo');
+  const payloadEmail = firstParam('email', 'contractorEmail');
+  const payloadPhone = firstParam('phone', 'contractorPhone');
+  const hasContractorPayload = !!(payloadName || payloadLicense || payloadEmail || payloadPhone);
+
   const urlPayloadContractor: Contractor | null = contractorId && hasContractorPayload ? {
     id: contractorId,
-    name: urlParams.get('name') || 'Verified Contractor',
-    licenseNumber: urlParams.get('license') || '',
-    email: urlParams.get('email') || '',
-    phone: urlParams.get('phone') || '',
-    activeReportsCount: 0
+    name: payloadName || foundContractor?.name || 'Verified Contractor',
+    licenseNumber: payloadLicense || foundContractor?.licenseNumber || '',
+    email: payloadEmail || foundContractor?.email || '',
+    phone: payloadPhone || foundContractor?.phone || '',
+    activeReportsCount: foundContractor?.activeReportsCount || 0
   } : null;
+
+  const contractorMatchedByPayload = hasContractorPayload ? contractors.find(c => {
+    const sameLicense = payloadLicense && c.licenseNumber && c.licenseNumber.toLowerCase().trim() === payloadLicense.toLowerCase().trim();
+    const sameName = payloadName && c.name && c.name.toLowerCase().trim() === payloadName.toLowerCase().trim();
+    const sameEmail = payloadEmail && c.email && c.email.toLowerCase().trim() === payloadEmail.toLowerCase().trim();
+    return !!(sameLicense || sameName || sameEmail);
+  }) : null;
 
   const reportNamedContractor: Contractor | null = targetReport ? {
     id: targetReport.contractorId,
-    name: targetReport.contractorName || 'Verified Contractor',
-    licenseNumber: '',
-    email: '',
-    phone: '',
-    activeReportsCount: 0
+    name: targetReport.contractorName || foundContractor?.name || 'Verified Contractor',
+    licenseNumber: (targetReport as any).contractorLicenseNumber || foundContractor?.licenseNumber || '',
+    email: foundContractor?.email || '',
+    phone: foundContractor?.phone || '',
+    activeReportsCount: foundContractor?.activeReportsCount || 0
   } : null;
 
-  // IMPORTANT: If the QR carries company details, trust those FIRST.
-  // Some QR codes reuse demo IDs like con-2/con-3; using foundContractor first
-  // would show the generic demo company instead of the assigned company encoded in the QR.
-  const targetContractor = urlPayloadContractor || foundContractor || reportNamedContractor || (
-    contractorId === 'con-2' || (targetReport && targetReport.contractorId === 'con-2') ? {
-      id: 'con-2',
-      name: 'Metro Fire Protection',
-      licenseNumber: 'F-44120-C',
-      email: 'nj-inspect@metrofirenj.com',
-      phone: '(732) 555-4120',
-      activeReportsCount: 0
-    } : contractorId === 'con-3' || (targetReport && targetReport.contractorId === 'con-3') ? {
-      id: 'con-3',
-      name: 'Titan Fire Systems Inc.',
-      licenseNumber: 'F-88291-C',
-      email: 'filings@titanfiresystems.com',
-      phone: '(609) 555-8291',
+  // Public contractor QR source of truth:
+  // 1) company data encoded in the QR URL, 2) a live DB match, 3) report company data,
+  // 4) a visible "unknown ID" profile instead of silently showing a generic/demo company.
+  const targetContractor: Contractor | null = urlPayloadContractor || contractorMatchedByPayload || foundContractor || reportNamedContractor || (
+    contractorId ? {
+      id: contractorId,
+      name: payloadName || `Contractor Profile ${contractorId}`,
+      licenseNumber: payloadLicense || 'Not listed',
+      email: payloadEmail || '',
+      phone: payloadPhone || '',
       activeReportsCount: 0
     } : null
   );
@@ -678,7 +691,7 @@ export default function PublicVerificationPortal({
                 if (onNavigate) {
                   onNavigate(null, targetReport.contractorId);
                 } else {
-                  window.history.pushState(null, '', `?contractor=${targetReport.contractorId}`);
+                  window.history.pushState(null, '', `/contractor/${encodeURIComponent(targetReport.contractorId)}`);
                   window.dispatchEvent(new PopStateEvent('popstate'));
                 }
                 window.scrollTo({ top: 0, behavior: 'smooth' });
