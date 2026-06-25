@@ -455,9 +455,10 @@ export default function PublicVerificationPortal({
     activeReportsCount: 0
   } : null;
 
-  // Prefer the live registered contractor. If the QR carries company details, use those next.
-  // Only use built-in demo fallbacks when no assigned company details were supplied.
-  const targetContractor = foundContractor || urlPayloadContractor || reportNamedContractor || (
+  // IMPORTANT: If the QR carries company details, trust those FIRST.
+  // Some QR codes reuse demo IDs like con-2/con-3; using foundContractor first
+  // would show the generic demo company instead of the assigned company encoded in the QR.
+  const targetContractor = urlPayloadContractor || foundContractor || reportNamedContractor || (
     contractorId === 'con-2' || (targetReport && targetReport.contractorId === 'con-2') ? {
       id: 'con-2',
       name: 'Metro Fire Protection',
