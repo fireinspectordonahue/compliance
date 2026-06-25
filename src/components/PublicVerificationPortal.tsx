@@ -446,9 +446,31 @@ export default function PublicVerificationPortal({
     return null;
   }, [contractorId, contractors, targetReport]);
 
+
+  const contractorUrlData = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search);
+    const name = params.get('name') || params.get('company') || params.get('contractorName') || '';
+    const license = params.get('license') || params.get('licenseNumber') || '';
+    const email = params.get('email') || '';
+    const phone = params.get('phone') || '';
+
+    if (!name && !license && !email && !phone) return null;
+
+    return {
+      id: contractorId || targetReport?.contractorId || 'contractor-url',
+      name: name || 'Registered Fire Protection Contractor',
+      licenseNumber: license || 'Not listed',
+      email: email || 'not-listed@compliancelink.local',
+      phone: phone || 'Not listed',
+      activeReportsCount: 0
+    } as Contractor;
+  }, [contractorId, targetReport?.contractorId]);
+
   // Robust targetContractor insurance fallback for system default contractor IDs.
   const targetContractor = useMemo(() => {
     if (foundContractor) return foundContractor;
+    if (contractorUrlData) return contractorUrlData;
 
     const effectiveContractorId = contractorId || targetReport?.contractorId || null;
 
@@ -488,7 +510,7 @@ export default function PublicVerificationPortal({
     }
 
     return null;
-  }, [foundContractor, contractorId, targetReport]);
+  }, [foundContractor, contractorUrlData, contractorId, targetReport]);
 
   useEffect(() => {
     if (contractors && contractors.length > 0) {

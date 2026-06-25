@@ -140,6 +140,16 @@ const getPublicDomainUrl = (qrMode: 'dev' | 'public' = 'public', customOverride?
   return "https://fire-inspect.local";
 };
 
+const buildContractorPublicUrl = (baseUrl: string, contractor: Contractor) => {
+  const cleanBase = (baseUrl || 'https://fire-inspect.local').replace(/\/$/, '');
+  const params = new URLSearchParams();
+  params.set('name', contractor.name || '');
+  params.set('license', contractor.licenseNumber || '');
+  params.set('email', contractor.email || '');
+  params.set('phone', contractor.phone || '');
+  return `${cleanBase}/contractor/${encodeURIComponent(contractor.id)}?${params.toString()}`;
+};
+
 const downloadVectorSVG = (reportId: string) => {
   const svgElement = document.getElementById("vector-qr-svg-" + reportId);
   if (!svgElement) {
@@ -1516,7 +1526,7 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
                   phone: '(609) 555-0100'
                 };
                 const appDomainUrl = getPublicDomainUrl(qrMode, customDomain);
-                const contractorPageUrl = `${appDomainUrl}/contractor/${currentCon.id}`;
+                const contractorPageUrl = buildContractorPublicUrl(appDomainUrl, currentCon as Contractor);
 
                 return (
                   <div className="p-5 border-b border-slate-100 space-y-4">
@@ -4048,13 +4058,13 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
               {/* QR Image container block */}
               <div className="p-3 bg-white border-2 border-[#dc2626] rounded shadow-md flex flex-col items-center justify-center space-y-2">
                 <QRCodeSVG 
-                  value={`${getPublicDomainUrl(qrMode, customDomain) || "https://fire-inspect.local"}/contractor/${user.contractorId || 'con-1'}`}
+                  value={buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain), (contractors.find(c => c.id === (user.contractorId || 'con-1')) || { id: user.contractorId || 'con-1', name: user.name, licenseNumber: user.contractorId === 'con-2' ? 'F-44120-C' : user.contractorId === 'con-3' ? 'F-92811-C' : 'F-88291-C', email: user.email || 'contact@fire-prevention.com', phone: '(609) 555-0100', activeReportsCount: 0 }) as Contractor)}
                   size={160}
                   fgColor="#0f172a"
                   className="w-[160px] h-[160px]"
                 />
                 <a 
-                  href={`${getPublicDomainUrl(qrMode, customDomain)}/contractor/${user.contractorId || 'con-1'}`}
+                  href={buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain), (contractors.find(c => c.id === (user.contractorId || 'con-1')) || { id: user.contractorId || 'con-1', name: user.name, licenseNumber: user.contractorId === 'con-2' ? 'F-44120-C' : user.contractorId === 'con-3' ? 'F-92811-C' : 'F-88291-C', email: user.email || 'contact@fire-prevention.com', phone: '(609) 555-0100', activeReportsCount: 0 }) as Contractor)}
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-[9px] text-[#dc2626] font-bold hover:underline flex items-center gap-1 font-sans"
