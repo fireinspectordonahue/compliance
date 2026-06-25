@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Property, InspectionReport, Contractor, UserInfo } from '../types';
 import Logo from './Logo';
 import { 
@@ -430,87 +430,50 @@ export default function PublicVerificationPortal({
     }
   };
 
-  // Parse target report or contractor BEFORE any early return.
-  // This prevents React hook-order crashes when the public QR page flashes during loading.
-  const targetReport = useMemo(() => {
-    return verifyId ? reports.find(r => r.id === verifyId) || null : null;
-  }, [verifyId, reports]);
+  // Parse target report or contractor before any conditional returns so React hook order stays stable.
+  const targetReport = verifyId ? reports.find(r => r.id === verifyId) : null;
+  const foundContractor = contractorId ? contractors.find(c => c.id === contractorId) : 
+                          targetReport ? contractors.find(c => c.id === targetReport.contractorId) : null;
 
-  const foundContractor = useMemo(() => {
-    if (contractorId) {
-      return contractors.find(c => c.id === contractorId) || null;
-    }
-    if (targetReport) {
-      return contractors.find(c => c.id === targetReport.contractorId) || null;
-    }
-    return null;
-  }, [contractorId, contractors, targetReport]);
+  const urlParams = typeof window !== 'undefined' ? new URL(window.location.href).searchParams : new URLSearchParams();
+  const hasContractorPayload = !!(urlParams.get('name') || urlParams.get('license') || urlParams.get('email') || urlParams.get('phone'));
+  const urlPayloadContractor: Contractor | null = contractorId && hasContractorPayload ? {
+    id: contractorId,
+    name: urlParams.get('name') || 'Verified Contractor',
+    licenseNumber: urlParams.get('license') || '',
+    email: urlParams.get('email') || '',
+    phone: urlParams.get('phone') || '',
+    activeReportsCount: 0
+  } : null;
 
+  const reportNamedContractor: Contractor | null = targetReport ? {
+    id: targetReport.contractorId,
+    name: targetReport.contractorName || 'Verified Contractor',
+    licenseNumber: '',
+    email: '',
+    phone: '',
+    activeReportsCount: 0
+  } : null;
 
-  const contractorUrlData = useMemo(() => {
-    if (typeof window === 'undefined') return null;
-    const params = new URLSearchParams(window.location.search);
-    const name = params.get('name') || params.get('company') || params.get('contractorName') || '';
-    const license = params.get('license') || params.get('licenseNumber') || '';
-    const email = params.get('email') || '';
-    const phone = params.get('phone') || '';
-
-    if (!name && !license && !email && !phone) return null;
-
-    return {
-      id: contractorId || targetReport?.contractorId || 'contractor-url',
-      name: name || 'Registered Fire Protection Contractor',
-      licenseNumber: license || 'Not listed',
-      email: email || 'not-listed@compliancelink.local',
-      phone: phone || 'Not listed',
+  // Prefer the live registered contractor. If the QR carries company details, use those next.
+  // Only use built-in demo fallbacks when no assigned company details were supplied.
+  const targetContractor = foundContractor || urlPayloadContractor || reportNamedContractor || (
+    contractorId === 'con-2' || (targetReport && targetReport.contractorId === 'con-2') ? {
+      id: 'con-2',
+      name: 'Metro Fire Protection',
+      licenseNumber: 'F-44120-C',
+      email: 'nj-inspect@metrofirenj.com',
+      phone: '(732) 555-4120',
       activeReportsCount: 0
-    } as Contractor;
-  }, [contractorId, targetReport?.contractorId]);
-
-  // Robust targetContractor insurance fallback for system default contractor IDs.
-  const targetContractor = useMemo(() => {
-    if (foundContractor) return foundContractor;
-    if (contractorUrlData) return contractorUrlData;
-
-    const effectiveContractorId = contractorId || targetReport?.contractorId || null;
-
-    if (effectiveContractorId === 'con-2') {
-      return {
-        id: 'con-2',
-        name: 'Metro Fire Protection',
-        licenseNumber: 'F-44120-C',
-        email: 'nj-inspect@metrofirenj.com',
-        phone: '(732) 555-4120',
-        activeReportsCount: 0
-      } as Contractor;
-    }
-
-    if (effectiveContractorId === 'con-3') {
-      return {
-        id: 'con-3',
-        name: 'Titan Fire Systems Inc.',
-        licenseNumber: 'F-88291-C',
-        email: 'filings@titanfiresystems.com',
-        phone: '(609) 555-8291',
-        activeReportsCount: 0
-      } as Contractor;
-    }
-
-    // Never allow a contractor QR route to render a blank screen.
-    // If the live database has not synced yet, still open a public contractor page instead of returning to login.
-    if (effectiveContractorId) {
-      return {
-        id: effectiveContractorId,
-        name: 'Registered Fire Protection Contractor',
-        licenseNumber: effectiveContractorId.toUpperCase(),
-        email: 'not-listed@compliancelink.local',
-        phone: 'Not listed',
-        activeReportsCount: 0
-      } as Contractor;
-    }
-
-    return null;
-  }, [foundContractor, contractorUrlData, contractorId, targetReport]);
+    } : contractorId === 'con-3' || (targetReport && targetReport.contractorId === 'con-3') ? {
+      id: 'con-3',
+      name: 'Titan Fire Systems Inc.',
+      licenseNumber: 'F-88291-C',
+      email: 'filings@titanfiresystems.com',
+      phone: '(609) 555-8291',
+      activeReportsCount: 0
+    } : null
+  );
 
   useEffect(() => {
     if (contractors && contractors.length > 0) {
@@ -522,10 +485,6 @@ export default function PublicVerificationPortal({
       }
     }
   }, [contractors, contractorId, targetContractor?.id]);
-
-  const targetProperty = useMemo(() => {
-    return targetReport ? properties.find(p => p.id === targetReport.propertyId) || null : null;
-  }, [targetReport, properties]);
 
   if (isLoading) {
     return (
@@ -569,6 +528,8 @@ export default function PublicVerificationPortal({
       </div>
     );
   }
+
+  const targetProperty = targetReport ? properties.find(p => p.id === targetReport.propertyId) : null;
 
   const handleBureauAuth = (e: React.FormEvent) => {
     e.preventDefault();
@@ -716,7 +677,7 @@ export default function PublicVerificationPortal({
                 if (onNavigate) {
                   onNavigate(null, targetReport.contractorId);
                 } else {
-                  window.history.pushState(null, '', `/contractor/${targetReport.contractorId}`);
+                  window.history.pushState(null, '', `?contractor=${targetReport.contractorId}`);
                   window.dispatchEvent(new PopStateEvent('popstate'));
                 }
                 window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -50,18 +50,6 @@ export default function HomePortal({
         cId = decodeURIComponent(contractorMatch[1]);
       }
 
-      // Also support clean public URLs like /contractor/con-3 or /verify/rep-123.
-      try {
-        const parsed = new URL(decodedText);
-        const parts = parsed.pathname.split('/').filter(Boolean);
-        if (!vId && parts[0] === 'verify' && parts[1]) vId = decodeURIComponent(parts[1]);
-        if (!cId && parts[0] === 'contractor' && parts[1]) cId = decodeURIComponent(parts[1]);
-      } catch (_) {
-        const pathMatch = decodedText.match(/\/(contractor|verify)\/([^/?#]+)/);
-        if (pathMatch && pathMatch[1] === 'verify' && !vId) vId = decodeURIComponent(pathMatch[2]);
-        if (pathMatch && pathMatch[1] === 'contractor' && !cId) cId = decodeURIComponent(pathMatch[2]);
-      }
-
       // Fallback for raw IDs
       if (!vId && !cId) {
         if (decodedText.startsWith('rep-') || decodedText.startsWith('report-')) {
@@ -84,7 +72,7 @@ export default function HomePortal({
         if (onNavigateToPublicVerification) {
           onNavigateToPublicVerification(null, cId);
         } else {
-          window.history.pushState(null, '', `/contractor/${cId}`);
+          window.history.pushState(null, '', `?contractor=${cId}`);
           window.dispatchEvent(new PopStateEvent('popstate'));
         }
       } else {

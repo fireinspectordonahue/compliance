@@ -32,33 +32,35 @@ export default function App() {
   const [contractorParamId, setContractorParamId] = useState<string | null>(null);
   const [dbLoading, setDbLoading] = useState(true);
 
-  // Sync state if URL changes
+  // Sync state if URL changes. Supports both old query links and direct QR links:
+  //   /?contractor=con-123
+  //   /contractor/con-123
+  //   /?verify=rep-123
+  //   /verify/rep-123
   useEffect(() => {
     const handleUrlChange = () => {
       const currentUrl = new URL(window.location.href);
       const currentParams = currentUrl.searchParams;
       const pathParts = currentUrl.pathname.split('/').filter(Boolean);
-      const pathVerifyId = pathParts[0] === 'verify' ? pathParts[1] : null;
-      const pathContractorId = pathParts[0] === 'contractor' ? pathParts[1] : null;
+      const pathContractorId = pathParts[0] === 'contractor' ? decodeURIComponent(pathParts[1] || '') : null;
+      const pathVerifyId = pathParts[0] === 'verify' ? decodeURIComponent(pathParts[1] || '') : null;
       const vId = currentParams.get('verify') || pathVerifyId;
       const cId = currentParams.get('contractor') || pathContractorId;
-      // If found in query parameters, update and keep view open. We do not automatically set to false 
-      // when empty, to prevent iframe sandbox page-sync resets from flashing/resetting the UI.
+
       if (vId) {
         setVerifyId(vId);
+        setContractorParamId(null);
         setShowPublicRoute(true);
-      }
-      if (cId) {
+      } else if (cId) {
+        setVerifyId(null);
         setContractorParamId(cId);
         setShowPublicRoute(true);
       }
     };
     
-    // Run initially
     handleUrlChange();
 
     window.addEventListener('popstate', handleUrlChange);
-    // Periodically poll for URL updates since iframe URL hashes may shift without standard trigger
     const timer = setInterval(handleUrlChange, 600);
     return () => {
       window.removeEventListener('popstate', handleUrlChange);

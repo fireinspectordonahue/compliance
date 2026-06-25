@@ -140,14 +140,17 @@ const getPublicDomainUrl = (qrMode: 'dev' | 'public' = 'public', customOverride?
   return "https://fire-inspect.local";
 };
 
-const buildContractorPublicUrl = (baseUrl: string, contractor: Contractor) => {
-  const cleanBase = (baseUrl || 'https://fire-inspect.local').replace(/\/$/, '');
+
+const buildContractorPublicUrl = (baseUrl: string, contractor: Partial<Contractor> & { id?: string } | null | undefined) => {
+  const safeBase = (baseUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://fire-inspect.local')).replace(/\/$/, '');
+  const id = encodeURIComponent(contractor?.id || 'unknown-contractor');
   const params = new URLSearchParams();
-  params.set('name', contractor.name || '');
-  params.set('license', contractor.licenseNumber || '');
-  params.set('email', contractor.email || '');
-  params.set('phone', contractor.phone || '');
-  return `${cleanBase}/contractor/${encodeURIComponent(contractor.id)}?${params.toString()}`;
+  if (contractor?.name) params.set('name', contractor.name);
+  if (contractor?.licenseNumber) params.set('license', contractor.licenseNumber);
+  if (contractor?.email) params.set('email', contractor.email);
+  if (contractor?.phone) params.set('phone', contractor.phone);
+  const query = params.toString();
+  return `${safeBase}/contractor/${id}${query ? `?${query}` : ''}`;
 };
 
 const downloadVectorSVG = (reportId: string) => {
@@ -722,6 +725,14 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
   const [aiParseSuccess, setAiParseSuccess] = useState(false);
 
   const contractorId = user.contractorId || 'con-1';
+  const activeContractor = contractors.find(c => c.id === contractorId) || contractors[0] || {
+    id: contractorId,
+    name: user.name || 'Registered Contractor',
+    licenseNumber: '',
+    email: user.email || '',
+    phone: '',
+    activeReportsCount: 0
+  };
   const myReports = reports.filter(r => r.contractorId === contractorId);
 
   // Dynamic filter lists
@@ -1526,7 +1537,7 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
                   phone: '(609) 555-0100'
                 };
                 const appDomainUrl = getPublicDomainUrl(qrMode, customDomain);
-                const contractorPageUrl = buildContractorPublicUrl(appDomainUrl, currentCon as Contractor);
+                const contractorPageUrl = buildContractorPublicUrl(appDomainUrl, currentCon);
 
                 return (
                   <div className="p-5 border-b border-slate-100 space-y-4">
@@ -1616,7 +1627,7 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
                           </span>
                           <div className="flex gap-1.5 items-center justify-between">
                             <code className="text-[9px] text-slate-300 font-mono font-bold break-all whitespace-pre-wrap leading-tight select-all">
-                              {getPublicDomainUrl(qrMode, customDomain) + '/contractor/' + currentCon.id}
+                              {buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain), currentCon)}
                             </code>
                           </div>
                         </div>
@@ -4058,13 +4069,13 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
               {/* QR Image container block */}
               <div className="p-3 bg-white border-2 border-[#dc2626] rounded shadow-md flex flex-col items-center justify-center space-y-2">
                 <QRCodeSVG 
-                  value={buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain), (contractors.find(c => c.id === (user.contractorId || 'con-1')) || { id: user.contractorId || 'con-1', name: user.name, licenseNumber: user.contractorId === 'con-2' ? 'F-44120-C' : user.contractorId === 'con-3' ? 'F-92811-C' : 'F-88291-C', email: user.email || 'contact@fire-prevention.com', phone: '(609) 555-0100', activeReportsCount: 0 }) as Contractor)}
+                  value={buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain) || "https://fire-inspect.local", activeContractor)}
                   size={160}
                   fgColor="#0f172a"
                   className="w-[160px] h-[160px]"
                 />
                 <a 
-                  href={buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain), (contractors.find(c => c.id === (user.contractorId || 'con-1')) || { id: user.contractorId || 'con-1', name: user.name, licenseNumber: user.contractorId === 'con-2' ? 'F-44120-C' : user.contractorId === 'con-3' ? 'F-92811-C' : 'F-88291-C', email: user.email || 'contact@fire-prevention.com', phone: '(609) 555-0100', activeReportsCount: 0 }) as Contractor)}
+                  href={buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain), activeContractor)}
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-[9px] text-[#dc2626] font-bold hover:underline flex items-center gap-1 font-sans"
