@@ -43,7 +43,7 @@ export default function App() {
       const currentParams = currentUrl.searchParams;
       const pathParts = currentUrl.pathname.split('/').filter(Boolean);
       const pathContractorId = pathParts[0] === 'contractor' ? decodeURIComponent(pathParts[1] || '') : null;
-      const pathVerifyId = pathParts[0] === 'verify' ? decodeURIComponent(pathParts[1] || '') : null;
+      const pathVerifyId = (pathParts[0] === 'verify' || pathParts[0] === 'report') ? decodeURIComponent(pathParts[1] || '') : null;
       const vId = currentParams.get('verify') || pathVerifyId;
       const cId = currentParams.get('contractor') || pathContractorId;
 
@@ -83,12 +83,12 @@ export default function App() {
     setContractorParamId(null);
     setShowPublicRoute(false);
     try {
-      window.history.pushState(null, '', '/');
+      window.history.pushState(null, '', window.location.pathname);
     } catch (e) {
       console.warn(e);
     }
-    // Always return to the portal-selection home screen, not the QR deep-link path.
-    window.location.href = window.location.origin + '/';
+    // Clear query parameters gracefully by forcing a clean routing reload
+    window.location.href = window.location.origin + window.location.pathname;
   };
 
   // Function to serialize state back to the backend JSON store

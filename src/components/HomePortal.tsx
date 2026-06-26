@@ -44,18 +44,27 @@ export default function HomePortal({
         vId = decodeURIComponent(verifyMatch[1]);
       }
 
-      // Extract ?contractor=, &contractor=, or direct /contractor/{id} paths
+      // Extract ?contractor= or &contractor=
       const contractorMatch = decodedText.match(/[?&]contractor=([^&?#]+)/);
       if (contractorMatch && contractorMatch[1]) {
         cId = decodeURIComponent(contractorMatch[1]);
       }
-      const contractorPathMatch = decodedText.match(/\/contractor\/([^/?#&]+)/);
-      if (!cId && contractorPathMatch && contractorPathMatch[1]) {
-        cId = decodeURIComponent(contractorPathMatch[1]);
-      }
-      const verifyPathMatch = decodedText.match(/\/verify\/([^/?#&]+)/);
-      if (!vId && verifyPathMatch && verifyPathMatch[1]) {
-        vId = decodeURIComponent(verifyPathMatch[1]);
+
+      // Extract direct public routes: /contractor/:id or /verify/:id
+      if (!vId && !cId) {
+        try {
+          const parsedUrl = decodedText.startsWith('http://') || decodedText.startsWith('https://')
+            ? new URL(decodedText)
+            : new URL(decodedText, window.location.origin);
+          const pathParts = parsedUrl.pathname.split('/').filter(Boolean);
+          if (pathParts[0] === 'contractor' && pathParts[1]) {
+            cId = decodeURIComponent(pathParts[1]);
+          } else if ((pathParts[0] === 'verify' || pathParts[0] === 'report') && pathParts[1]) {
+            vId = decodeURIComponent(pathParts[1]);
+          }
+        } catch (err) {
+          // Not a URL; raw ID fallback below will handle it.
+        }
       }
 
       // Fallback for raw IDs
@@ -77,6 +86,17 @@ export default function HomePortal({
         }
       } else if (cId) {
         console.log("Parsed Contractor ID:", cId);
+        // If the QR was a full Compliance Link URL, use it as-is so encoded company payload
+        // such as ?name=&license=&email=&phone= is not lost by in-memory navigation.
+        if (decodedText.startsWith('http://') || decodedText.startsWith('https://')) {
+          try {
+            const parsedUrl = new URL(decodedText);
+            if (parsedUrl.origin === window.location.origin && parsedUrl.pathname.startsWith('/contractor/')) {
+              window.location.href = parsedUrl.toString();
+              return;
+            }
+          } catch {}
+        }
         if (onNavigateToPublicVerification) {
           onNavigateToPublicVerification(null, cId);
         } else {

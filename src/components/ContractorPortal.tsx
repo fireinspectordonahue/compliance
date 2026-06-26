@@ -684,19 +684,10 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
       let verifyId = '';
       let contractorIdParam = '';
 
-      const verifyQueryMatch = decodedText.match(/[?&]verify=([^&?#]+)/);
-      const contractorQueryMatch = decodedText.match(/[?&]contractor=([^&?#]+)/);
-      const verifyPathMatch = decodedText.match(/\/verify\/([^/?#&]+)/);
-      const contractorPathMatch = decodedText.match(/\/contractor\/([^/?#&]+)/);
-
-      if (verifyQueryMatch && verifyQueryMatch[1]) {
-        verifyId = decodeURIComponent(verifyQueryMatch[1]);
-      } else if (verifyPathMatch && verifyPathMatch[1]) {
-        verifyId = decodeURIComponent(verifyPathMatch[1]);
-      } else if (contractorQueryMatch && contractorQueryMatch[1]) {
-        contractorIdParam = decodeURIComponent(contractorQueryMatch[1]);
-      } else if (contractorPathMatch && contractorPathMatch[1]) {
-        contractorIdParam = decodeURIComponent(contractorPathMatch[1]);
+      if (decodedText.includes('verify=')) {
+        verifyId = decodedText.split('verify=')[1]?.split('&')[0] || '';
+      } else if (decodedText.includes('contractor=')) {
+        contractorIdParam = decodedText.split('contractor=')[1]?.split('&')[0] || '';
       } else {
         if (decodedText.startsWith('rep-') || decodedText.startsWith('report-')) {
           verifyId = decodedText;
@@ -734,7 +725,7 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
   const [aiParseSuccess, setAiParseSuccess] = useState(false);
 
   const contractorId = user.contractorId || 'con-1';
-  const activeContractor = contractors.find(c => c.id === contractorId) || contractors[0] || {
+  const activeContractor = contractors.find(c => c.id === contractorId) || {
     id: contractorId,
     name: user.name || 'Registered Contractor',
     licenseNumber: '',
@@ -1538,13 +1529,7 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
               </div>
             ) : (
               (() => {
-                const currentCon = contractors.find(c => c.id === contractorId) || contractors[0] || {
-                  id: 'con-1',
-                  name: 'Titan Fire Systems Inc.',
-                  licenseNumber: user.contractorId === 'con-2' ? 'F-44120-C' : 'F-88291-C',
-                  email: 'contact@fire-prevention.com',
-                  phone: '(609) 555-0100'
-                };
+                const currentCon = activeContractor;
                 const appDomainUrl = getPublicDomainUrl(qrMode, customDomain);
                 const contractorPageUrl = buildContractorPublicUrl(appDomainUrl, currentCon);
 

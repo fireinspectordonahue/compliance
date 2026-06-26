@@ -992,19 +992,10 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
       let verifyId = '';
       let contractorId = '';
 
-      const verifyQueryMatch = decodedText.match(/[?&]verify=([^&?#]+)/);
-      const contractorQueryMatch = decodedText.match(/[?&]contractor=([^&?#]+)/);
-      const verifyPathMatch = decodedText.match(/\/verify\/([^/?#&]+)/);
-      const contractorPathMatch = decodedText.match(/\/contractor\/([^/?#&]+)/);
-
-      if (verifyQueryMatch && verifyQueryMatch[1]) {
-        verifyId = decodeURIComponent(verifyQueryMatch[1]);
-      } else if (verifyPathMatch && verifyPathMatch[1]) {
-        verifyId = decodeURIComponent(verifyPathMatch[1]);
-      } else if (contractorQueryMatch && contractorQueryMatch[1]) {
-        contractorId = decodeURIComponent(contractorQueryMatch[1]);
-      } else if (contractorPathMatch && contractorPathMatch[1]) {
-        contractorId = decodeURIComponent(contractorPathMatch[1]);
+      if (decodedText.includes('verify=')) {
+        verifyId = decodedText.split('verify=')[1]?.split('&')[0] || '';
+      } else if (decodedText.includes('contractor=')) {
+        contractorId = decodedText.split('contractor=')[1]?.split('&')[0] || '';
       } else {
         if (decodedText.startsWith('rep-') || decodedText.startsWith('report-')) {
           verifyId = decodedText;
