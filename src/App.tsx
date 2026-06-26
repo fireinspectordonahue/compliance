@@ -7,6 +7,35 @@ import BureauPortal from './components/BureauPortal';
 import PublicVerificationPortal from './components/PublicVerificationPortal';
 import { safeStorage } from './lib/storage';
 
+
+const readPublicRouteFromUrl = () => {
+  if (typeof window === 'undefined') {
+    return { show: false, verifyId: null as string | null, contractorId: null as string | null };
+  }
+
+  const currentUrl = new URL(window.location.href);
+  const currentParams = currentUrl.searchParams;
+  const pathParts = currentUrl.pathname.split('/').filter(Boolean);
+
+  const pathContractorId = pathParts[0] === 'contractor' && pathParts[1] ? pathParts[1] : null;
+  const pathVerifyId = (pathParts[0] === 'verify' || pathParts[0] === 'report') && pathParts[1] ? pathParts[1] : null;
+
+  const vId = currentParams.get('verify') || currentParams.get('report') || pathVerifyId;
+
+  // Supports all public contractor formats:
+  //   /contractor/con-1
+  //   /contractor/con-1?name=...
+  //   ?contractor=con-1
+  //   /contractor?name=...&license=...  (Base44-style public link without an id)
+  const cId =
+    currentParams.get('contractor') ||
+    currentParams.get('companyId') ||
+    pathContractorId ||
+    (pathParts[0] === 'contractor' && currentParams.get('name') ? (currentParams.get('id') || 'public-contractor') : null);
+
+  return { show: !!(vId || cId), verifyId: vId, contractorId: cId };
+};
+
 const safeSetLocalStorage = (key: string, value: string) => {
   try {
     safeStorage.setItem(key, value);
@@ -27,40 +56,32 @@ export default function App() {
   const [bureauAccounts, setBureauAccounts] = useState<{ id: string; name: string; password: string }[]>([]);
 
   // Check if we are viewing in public unauthenticated mode
-  const [showPublicRoute, setShowPublicRoute] = useState(false);
-  const [verifyId, setVerifyId] = useState<string | null>(null);
-  const [contractorParamId, setContractorParamId] = useState<string | null>(null);
+  const initialPublicRoute = readPublicRouteFromUrl();
+  const [showPublicRoute, setShowPublicRoute] = useState(initialPublicRoute.show);
+  const [verifyId, setVerifyId] = useState<string | null>(initialPublicRoute.verifyId);
+  const [contractorParamId, setContractorParamId] = useState<string | null>(initialPublicRoute.contractorId);
   const [dbLoading, setDbLoading] = useState(true);
 
-  // Sync state if URL changes. Supports both old query links and direct QR links:
-  //   /?contractor=con-123
-  //   /contractor/con-123
-  //   /?verify=rep-123
-  //   /verify/rep-123
+  // Sync state if URL changes
   useEffect(() => {
     const handleUrlChange = () => {
-      const currentUrl = new URL(window.location.href);
-      const currentParams = currentUrl.searchParams;
-      const pathParts = currentUrl.pathname.split('/').filter(Boolean);
-      const pathContractorId = pathParts[0] === 'contractor' ? decodeURIComponent(pathParts[1] || '') : null;
-      const pathVerifyId = (pathParts[0] === 'verify' || pathParts[0] === 'report') ? decodeURIComponent(pathParts[1] || '') : null;
-      const vId = currentParams.get('verify') || pathVerifyId;
-      const cId = currentParams.get('contractor') || pathContractorId;
-
-      if (vId) {
-        setVerifyId(vId);
-        setContractorParamId(null);
+      const route = readPublicRouteFromUrl();
+      // If found in URL, update immediately and keep public view open.
+      if (route.verifyId) {
+        setVerifyId(route.verifyId);
         setShowPublicRoute(true);
-      } else if (cId) {
-        setVerifyId(null);
-        setContractorParamId(cId);
+      }
+      if (route.contractorId) {
+        setContractorParamId(route.contractorId);
         setShowPublicRoute(true);
       }
     };
     
+    // Run initially
     handleUrlChange();
 
     window.addEventListener('popstate', handleUrlChange);
+    // Periodically poll for URL updates since iframe URL hashes may shift without standard trigger
     const timer = setInterval(handleUrlChange, 600);
     return () => {
       window.removeEventListener('popstate', handleUrlChange);
