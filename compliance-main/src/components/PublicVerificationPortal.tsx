@@ -435,20 +435,7 @@ export default function PublicVerificationPortal({
   const foundContractor = contractorId ? contractors.find(c => c.id === contractorId) : 
                           targetReport ? contractors.find(c => c.id === targetReport.contractorId) : null;
 
-  const urlParams = (() => {
-    if (typeof window === 'undefined') return new URLSearchParams();
-    const url = new URL(window.location.href);
-    const params = new URLSearchParams(url.search);
-    // Some mobile scanners or iframe tools can preserve data after a hash. Merge it too.
-    if (url.hash && url.hash.includes('?')) {
-      const hashQuery = url.hash.slice(url.hash.indexOf('?') + 1);
-      const hashParams = new URLSearchParams(hashQuery);
-      hashParams.forEach((value, key) => {
-        if (!params.has(key)) params.set(key, value);
-      });
-    }
-    return params;
-  })();
+  const urlParams = typeof window !== 'undefined' ? new URL(window.location.href).searchParams : new URLSearchParams();
   const hasContractorPayload = !!(urlParams.get('name') || urlParams.get('license') || urlParams.get('email') || urlParams.get('phone'));
   const urlPayloadContractor: Contractor | null = contractorId && hasContractorPayload ? {
     id: contractorId,
@@ -472,14 +459,7 @@ export default function PublicVerificationPortal({
   // Some QR codes reuse demo IDs like con-2/con-3; using foundContractor first
   // would show the generic demo company instead of the assigned company encoded in the QR.
   const targetContractor = urlPayloadContractor || foundContractor || reportNamedContractor || (
-    contractorId && contractorId !== 'con-2' && contractorId !== 'con-3' ? {
-      id: contractorId,
-      name: 'Verified Contractor Profile',
-      licenseNumber: '',
-      email: '',
-      phone: '',
-      activeReportsCount: 0
-    } : contractorId === 'con-2' || (targetReport && targetReport.contractorId === 'con-2') ? {
+    contractorId === 'con-2' || (targetReport && targetReport.contractorId === 'con-2') ? {
       id: 'con-2',
       name: 'Metro Fire Protection',
       licenseNumber: 'F-44120-C',

@@ -42,27 +42,22 @@ export default function App() {
       const currentUrl = new URL(window.location.href);
       const currentParams = currentUrl.searchParams;
       const pathParts = currentUrl.pathname.split('/').filter(Boolean);
-      const pathContractorId = pathParts[0] === 'contractor' ? decodeURIComponent(pathParts[1] || '') : null;
-      const pathVerifyId = (pathParts[0] === 'verify' || pathParts[0] === 'report') ? decodeURIComponent(pathParts[1] || '') : null;
-      const vId = currentParams.get('verify') || pathVerifyId;
+      const isContractorPath = pathParts[0] === 'contractor';
+      const pathContractorId = isContractorPath && pathParts[1] ? decodeURIComponent(pathParts[1]) : null;
+      const pathVerifyId = pathParts[0] === 'verify' && pathParts[1] ? decodeURIComponent(pathParts[1]) : null;
 
-      // Contractor QR links may be either:
-      //   /contractor/con-123?name=...
-      //   /contractor?name=...&license=...
-      //   ?contractor=con-123
-      // Treat any contractor page carrying company payload as a public contractor profile,
-      // even if the QR generator did not include a path ID.
-      const hasContractorPayload = !!(
-        currentParams.get('name') ||
-        currentParams.get('license') ||
-        currentParams.get('email') ||
-        currentParams.get('phone')
-      );
-      const slugFromName = (currentParams.get('name') || 'qr-contractor')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '') || 'qr-contractor';
-      const cId = currentParams.get('contractor') || pathContractorId || (pathParts[0] === 'contractor' && hasContractorPayload ? slugFromName : null);
+      // Base44-style public routes:
+      //   /contractor/:id
+      //   /contractor/:id?name=...&license=...&email=...&phone=...
+      //   /contractor?name=...&license=...&email=...&phone=...
+      // The last form has no ID, but it is still a public QR profile, not the contractor login portal.
+      const hasCompanyPayload = ['name', 'license', 'email', 'phone'].some((key) => {
+        const value = currentParams.get(key);
+        return !!value && value.trim().length > 0;
+      });
+
+      const vId = currentParams.get('verify') || pathVerifyId;
+      const cId = currentParams.get('contractor') || pathContractorId || (isContractorPath && hasCompanyPayload ? 'public-company' : null);
 
       if (vId) {
         setVerifyId(vId);
@@ -72,6 +67,11 @@ export default function App() {
         setVerifyId(null);
         setContractorParamId(cId);
         setShowPublicRoute(true);
+      } else if (isContractorPath && !activeUser) {
+        // /contractor with no ID or payload is the contractor login portal.
+        setVerifyId(null);
+        setContractorParamId(null);
+        setShowPublicRoute(false);
       }
     };
     

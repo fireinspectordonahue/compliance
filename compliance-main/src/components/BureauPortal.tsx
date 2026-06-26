@@ -76,6 +76,12 @@ const getPublicDomainUrl = (qrMode: 'dev' | 'public' = 'public', customOverride?
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
 
+  // Vercel production/preview domains should always use the current site origin.
+  // This prevents QR codes from using stale localStorage values from older deployments.
+  if (origin && hostname && hostname.includes('vercel.app')) {
+    return origin;
+  }
+
   // 1. Prioritize parsing client-side window hostname if we are running in Google Cloud Run (.run.app)
   if (hostname && hostname.includes('.run.app')) {
     let region = 'us-east1';
@@ -146,21 +152,14 @@ const getPublicDomainUrl = (qrMode: 'dev' | 'public' = 'public', customOverride?
   return "https://fire-inspect.local";
 };
 
-
-const buildContractorPublicUrl = (baseUrl: string, contractor: Partial<Contractor> & { id?: string } | null | undefined) => {
-  const safeBase = (baseUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://fire-inspect.local')).replace(/\/$/, '');
-  const fallbackSlug = (contractor?.name || contractor?.licenseNumber || 'qr-contractor')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'qr-contractor';
-  const id = encodeURIComponent(contractor?.id || fallbackSlug);
+const buildContractorPublicUrl = (baseUrl: string, contractor: Contractor) => {
+  const cleanBase = (baseUrl || 'https://fire-inspect.local').replace(/\/$/, '');
   const params = new URLSearchParams();
-  if (contractor?.name) params.set('name', contractor.name);
-  if (contractor?.licenseNumber) params.set('license', contractor.licenseNumber);
-  if (contractor?.email) params.set('email', contractor.email);
-  if (contractor?.phone) params.set('phone', contractor.phone);
-  const query = params.toString();
-  return `${safeBase}/contractor/${id}${query ? `?${query}` : ''}`;
+  params.set('name', contractor.name || '');
+  params.set('license', contractor.licenseNumber || '');
+  params.set('email', contractor.email || '');
+  params.set('phone', contractor.phone || '');
+  return `${cleanBase}/contractor/${encodeURIComponent(contractor.id)}?${params.toString()}`;
 };
 
 const downloadVectorSVG = (reportId: string) => {
@@ -2210,7 +2209,7 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
                       <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-[#dc2626]/40 group-hover/qr:border-[#dc2626] rounded-br-md transition-colors duration-200"></div>
                       
                       <QRCodeSVG 
-                        value={buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain) || "https://fire-inspect.local", con)}
+                        value={buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain), con)}
                         size={110}
                         fgColor="#0f172a"
                         className="rounded opacity-95 group-hover/qr:opacity-100 transition-all duration-200 group-hover/qr:scale-[1.02]"
@@ -3224,7 +3223,7 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
                 />
                 
                 <QRCodeSVG 
-                  value={buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain) || "https://fire-inspect.local", scanningContractor)}
+                  value={buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain), scanningContractor)}
                   size={100}
                   fgColor="#ffffff"
                   bgColor="#070b10"
@@ -4010,7 +4009,7 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
 
               <div className="flex flex-col sm:flex-row gap-2 font-sans pt-1">
                 <a
-                  href={buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain) || "https://fire-inspect.local", scannedContractorResult)}
+                  href={buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain), scannedContractorResult)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 py-2 bg-[#dc2626] hover:bg-black text-white text-xs font-black uppercase rounded flex items-center justify-center gap-1.5 transition cursor-pointer shadow-sm text-center leading-none"

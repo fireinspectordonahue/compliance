@@ -70,6 +70,12 @@ const getPublicDomainUrl = (qrMode: 'dev' | 'public' = 'public', customOverride?
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
 
+  // Vercel production/preview domains should always use the current site origin.
+  // This prevents QR codes from using stale localStorage values from older deployments.
+  if (origin && hostname && hostname.includes('vercel.app')) {
+    return origin;
+  }
+
   // 1. Prioritize parsing client-side window hostname if we are running in Google Cloud Run (.run.app)
   if (hostname && hostname.includes('.run.app')) {
     let region = 'us-east1';
@@ -140,21 +146,14 @@ const getPublicDomainUrl = (qrMode: 'dev' | 'public' = 'public', customOverride?
   return "https://fire-inspect.local";
 };
 
-
-const buildContractorPublicUrl = (baseUrl: string, contractor: Partial<Contractor> & { id?: string } | null | undefined) => {
-  const safeBase = (baseUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://fire-inspect.local')).replace(/\/$/, '');
-  const fallbackSlug = (contractor?.name || contractor?.licenseNumber || 'qr-contractor')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'qr-contractor';
-  const id = encodeURIComponent(contractor?.id || fallbackSlug);
+const buildContractorPublicUrl = (baseUrl: string, contractor: Contractor) => {
+  const cleanBase = (baseUrl || 'https://fire-inspect.local').replace(/\/$/, '');
   const params = new URLSearchParams();
-  if (contractor?.name) params.set('name', contractor.name);
-  if (contractor?.licenseNumber) params.set('license', contractor.licenseNumber);
-  if (contractor?.email) params.set('email', contractor.email);
-  if (contractor?.phone) params.set('phone', contractor.phone);
-  const query = params.toString();
-  return `${safeBase}/contractor/${id}${query ? `?${query}` : ''}`;
+  params.set('name', contractor.name || '');
+  params.set('license', contractor.licenseNumber || '');
+  params.set('email', contractor.email || '');
+  params.set('phone', contractor.phone || '');
+  return `${cleanBase}/contractor/${encodeURIComponent(contractor.id)}?${params.toString()}`;
 };
 
 const downloadVectorSVG = (reportId: string) => {
@@ -729,14 +728,6 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
   const [aiParseSuccess, setAiParseSuccess] = useState(false);
 
   const contractorId = user.contractorId || 'con-1';
-  const activeContractor = contractors.find(c => c.id === contractorId) || {
-    id: contractorId,
-    name: user.name || 'Registered Contractor',
-    licenseNumber: '',
-    email: user.email || '',
-    phone: '',
-    activeReportsCount: 0
-  };
   const myReports = reports.filter(r => r.contractorId === contractorId);
 
   // Dynamic filter lists
@@ -1533,9 +1524,15 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
               </div>
             ) : (
               (() => {
-                const currentCon = activeContractor;
+                const currentCon = contractors.find(c => c.id === contractorId) || contractors[0] || {
+                  id: 'con-1',
+                  name: 'Titan Fire Systems Inc.',
+                  licenseNumber: user.contractorId === 'con-2' ? 'F-44120-C' : 'F-88291-C',
+                  email: 'contact@fire-prevention.com',
+                  phone: '(609) 555-0100'
+                };
                 const appDomainUrl = getPublicDomainUrl(qrMode, customDomain);
-                const contractorPageUrl = buildContractorPublicUrl(appDomainUrl, currentCon);
+                const contractorPageUrl = buildContractorPublicUrl(appDomainUrl, currentCon as Contractor);
 
                 return (
                   <div className="p-5 border-b border-slate-100 space-y-4">
@@ -1625,7 +1622,7 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
                           </span>
                           <div className="flex gap-1.5 items-center justify-between">
                             <code className="text-[9px] text-slate-300 font-mono font-bold break-all whitespace-pre-wrap leading-tight select-all">
-                              {buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain), currentCon)}
+                              {getPublicDomainUrl(qrMode, customDomain) + '/contractor/' + currentCon.id}
                             </code>
                           </div>
                         </div>
@@ -4067,13 +4064,13 @@ Riser tested under standard hydrostatic pressure. Backflow certified compliant w
               {/* QR Image container block */}
               <div className="p-3 bg-white border-2 border-[#dc2626] rounded shadow-md flex flex-col items-center justify-center space-y-2">
                 <QRCodeSVG 
-                  value={buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain) || "https://fire-inspect.local", activeContractor)}
+                  value={buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain), (contractors.find(c => c.id === (user.contractorId || 'con-1')) || { id: user.contractorId || 'con-1', name: user.name, licenseNumber: user.contractorId === 'con-2' ? 'F-44120-C' : user.contractorId === 'con-3' ? 'F-92811-C' : 'F-88291-C', email: user.email || 'contact@fire-prevention.com', phone: '(609) 555-0100', activeReportsCount: 0 }) as Contractor)}
                   size={160}
                   fgColor="#0f172a"
                   className="w-[160px] h-[160px]"
                 />
                 <a 
-                  href={buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain), activeContractor)}
+                  href={buildContractorPublicUrl(getPublicDomainUrl(qrMode, customDomain), (contractors.find(c => c.id === (user.contractorId || 'con-1')) || { id: user.contractorId || 'con-1', name: user.name, licenseNumber: user.contractorId === 'con-2' ? 'F-44120-C' : user.contractorId === 'con-3' ? 'F-92811-C' : 'F-88291-C', email: user.email || 'contact@fire-prevention.com', phone: '(609) 555-0100', activeReportsCount: 0 }) as Contractor)}
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-[9px] text-[#dc2626] font-bold hover:underline flex items-center gap-1 font-sans"
